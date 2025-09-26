@@ -7,11 +7,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Ruta inicial
 app.get("/", (req, res) => {
   res.send("Servidor Backend corriendo correctamente");
 });
 
-// 📌 Obtener todos los productos
+// Obtener todos los productos
 app.get("/productos", (req, res) => {
   conexion.query("SELECT * FROM productos", (err, results) => {
     if (err) return res.status(500).json({ error: err });
@@ -19,7 +20,7 @@ app.get("/productos", (req, res) => {
   });
 });
 
-// 📌 Agregar producto
+// Agregar producto
 app.post("/productos", (req, res) => {
   const { nombre, descripcion, precio, imagen, categoria } = req.body;
   conexion.query(
@@ -32,7 +33,7 @@ app.post("/productos", (req, res) => {
   );
 });
 
-// 📌 Eliminar producto
+// Eliminar producto
 app.delete("/productos/:id", (req, res) => {
   const { id } = req.params;
   conexion.query("DELETE FROM productos WHERE id = ?", [id], (err) => {
@@ -41,7 +42,7 @@ app.delete("/productos/:id", (req, res) => {
   });
 });
 
-// 📌 Editar producto
+// Editar producto
 app.put("/productos/:id", (req, res) => {
   const { id } = req.params;
   const { nombre, descripcion, precio, imagen, categoria } = req.body;
