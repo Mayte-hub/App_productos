@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+
+
+/* index.css - you can later replace with full Tailwind build */
+html, body, #root {
+  height: 100%;
+}
