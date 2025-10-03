@@ -1,102 +1,115 @@
 import React, { useState, useEffect } from "react";
-import Barra from "../shared/barra"; // Barra lateral
+import Barra from "../shared/barra";
 
-export default function Productos() {
+export default function Articulos() {
   const [productos, setProductos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
   const [nuevoProducto, setNuevoProducto] = useState({
     nombre: "",
     descripcion: "",
     precio: "",
     imagen: "",
-    categoria: "",
+    categoria_id: "",
   });
   const [editando, setEditando] = useState(null);
 
-  // Cargar productos desde backend PHP
-  useEffect(() => {
-    fetch("http://localhost/backend/productos/index.php", {
-      method: "GET",
-    })
+  const API_URL = "http://localhost:4000/productos"; // URL de tu backend Node.js
+
+  // Cargar productos y categorías desde backend
+  const cargarDatos = () => {
+    fetch(API_URL)
       .then((res) => res.json())
       .then((data) => setProductos(data))
-      .catch((error) => console.error("Error al cargar productos:", error));
-  }, []);
+      .catch((error) =>
+        console.error("Error al cargar productos:", error)
+      );
 
-  // Manejo de inputs
-  const handleChange = (e) => {
-    setNuevoProducto({ ...nuevoProducto, [e.target.name]: e.target.value });
+    fetch("http://localhost:4000/categorias")
+      .then((res) => res.json())
+      .then((data) => setCategorias(data))
+      .catch((error) =>
+        console.error("Error al cargar categorías:", error)
+      );
   };
 
-  // Agregar producto
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  const handleChange = (e) => {
+    setNuevoProducto({
+      ...nuevoProducto,
+      [e.target.name]: e.target.value,
+    });
+  };
+
   const agregarProducto = () => {
-    fetch("http://localhost/backend/productos/index.php", {
+    if (
+      !nuevoProducto.nombre ||
+      !nuevoProducto.descripcion ||
+      !nuevoProducto.precio ||
+      !nuevoProducto.imagen ||
+      !nuevoProducto.categoria_id
+    ) {
+      alert("Completa todos los campos");
+      return;
+    }
+
+    fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(nuevoProducto),
     })
       .then((res) => res.json())
-      .then((data) => {
-        setProductos([...productos, data]);
+      .then(() => {
+        cargarDatos();
         setNuevoProducto({
           nombre: "",
           descripcion: "",
           precio: "",
           imagen: "",
-          categoria: "",
+          categoria_id: "",
         });
-      })
-      .catch((error) => console.error("Error al agregar producto:", error));
+      });
   };
 
-  // Eliminar producto
-  const eliminarProducto = (id) => {
-    fetch("http://localhost/backend/productos/index.php", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    })
-      .then(() => {
-        setProductos(productos.filter((p) => p.id !== id));
-      })
-      .catch((error) => console.error("Error al eliminar producto:", error));
-  };
-
-  // Editar producto
   const editarProducto = (producto) => {
     setEditando(producto);
     setNuevoProducto(producto);
   };
 
   const guardarEdicion = () => {
-    fetch("http://localhost/backend/productos/index.php", {
+    fetch(`${API_URL}/${editando.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...nuevoProducto, id: editando.id }),
+      body: JSON.stringify(nuevoProducto),
     })
-      .then((res) => res.json())
-      .then((data) => {
-        setProductos(productos.map((p) => (p.id === data.id ? data : p)));
+      .then(() => {
+        cargarDatos();
         setEditando(null);
         setNuevoProducto({
           nombre: "",
           descripcion: "",
           precio: "",
           imagen: "",
-          categoria: "",
+          categoria_id: "",
         });
-      })
-      .catch((error) => console.error("Error al guardar edición:", error));
+      });
+  };
+
+  const eliminarProducto = (id) => {
+    fetch(`${API_URL}/${id}`, {
+      method: "DELETE",
+    }).then(() => cargarDatos());
   };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Barra lateral */}
       <Barra />
 
-      {/* Contenido principal */}
       <div className="flex-1 p-8">
         <h1 className="text-3xl font-extrabold mb-6 text-gray-800">
-          Gestión de Productos
+          Gestión de Artículos
         </h1>
 
         {/* Formulario */}
@@ -104,6 +117,7 @@ export default function Productos() {
           <h2 className="text-2xl font-semibold mb-4 text-purple-700">
             {editando ? "✏️ Editar Producto" : "➕ Agregar Producto"}
           </h2>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input
               type="text"
@@ -113,6 +127,7 @@ export default function Productos() {
               onChange={handleChange}
               className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-purple-400 outline-none"
             />
+
             <input
               type="number"
               name="precio"
@@ -121,14 +136,21 @@ export default function Productos() {
               onChange={handleChange}
               className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-purple-400 outline-none"
             />
-            <input
-              type="text"
-              name="categoria"
-              placeholder="Categoría"
-              value={nuevoProducto.categoria}
+
+            <select
+              name="categoria_id"
+              value={nuevoProducto.categoria_id}
               onChange={handleChange}
               className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-purple-400 outline-none"
-            />
+            >
+              <option value="">Seleccione una categoría</option>
+              {categorias.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
+              ))}
+            </select>
+
             <input
               type="text"
               name="imagen"
@@ -137,6 +159,7 @@ export default function Productos() {
               onChange={handleChange}
               className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-purple-400 outline-none"
             />
+
             <textarea
               name="descripcion"
               placeholder="Descripción"
@@ -150,7 +173,7 @@ export default function Productos() {
             {editando ? (
               <button
                 onClick={guardarEdicion}
-                className="bg-purple-600 hover:bg-purple-700 transition text-white px-6 py-2 rounded-lg shadow-md"
+                className="bg-green-600 hover:bg-green-700 transition text-white px-6 py-2 rounded-lg shadow-md"
               >
                 💾 Guardar Cambios
               </button>
@@ -165,7 +188,7 @@ export default function Productos() {
           </div>
         </div>
 
-        {/* Tabla de productos */}
+        {/* Tabla */}
         <div className="overflow-x-auto bg-white shadow-lg rounded-xl border border-gray-200">
           <table className="w-full text-left border-collapse">
             <thead className="bg-purple-600 text-white">
@@ -192,7 +215,7 @@ export default function Productos() {
                     />
                   </td>
                   <td className="p-3 font-semibold">{producto.nombre}</td>
-                  <td className="p-3">{producto.categoria}</td>
+                  <td className="p-3">{producto.categoria_nombre || producto.categoria_id}</td>
                   <td className="p-3 text-gray-600">{producto.descripcion}</td>
                   <td className="p-3 font-bold text-purple-700">
                     ${producto.precio}

@@ -5,15 +5,17 @@ export default function Categorias() {
   const [categorias, setCategorias] = useState([]);
   const [nuevaCategoria, setNuevaCategoria] = useState({
     nombre: "",
-    descripcion: "",
   });
   const [editando, setEditando] = useState(null);
 
-  // Cargar categorías desde el backend
+  const API_URL = "http://localhost:4000/categorias";
+
+  // Cargar categorías
   useEffect(() => {
-    fetch("http://localhost:5000/categorias")
+    fetch(API_URL)
       .then((res) => res.json())
-      .then((data) => setCategorias(data));
+      .then((data) => setCategorias(data))
+      .catch((err) => console.error("Error al cargar categorías:", err));
   }, []);
 
   // Manejo de inputs
@@ -23,7 +25,12 @@ export default function Categorias() {
 
   // Agregar categoría
   const agregarCategoria = () => {
-    fetch("http://localhost:5000/categorias", {
+    if (!nuevaCategoria.nombre.trim()) {
+      alert("El nombre no puede estar vacío");
+      return;
+    }
+
+    fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(nuevaCategoria),
@@ -31,37 +38,48 @@ export default function Categorias() {
       .then((res) => res.json())
       .then((data) => {
         setCategorias([...categorias, data]);
-        setNuevaCategoria({ nombre: "", descripcion: "" });
-      });
+        setNuevaCategoria({ nombre: "" });
+      })
+      .catch((err) => console.error("Error al agregar categoría:", err));
   };
 
   // Eliminar categoría
   const eliminarCategoria = (id) => {
-    fetch(`http://localhost:5000/categorias/${id}`, {
-      method: "DELETE",
-    }).then(() => {
-      setCategorias(categorias.filter((c) => c.id !== id));
-    });
+    fetch(`${API_URL}/${id}`, { method: "DELETE" })
+      .then(() => {
+        setCategorias(categorias.filter((c) => c.id !== id));
+      })
+      .catch((err) => console.error("Error al eliminar categoría:", err));
   };
 
   // Editar categoría
   const editarCategoria = (categoria) => {
     setEditando(categoria);
-    setNuevaCategoria(categoria);
+    setNuevaCategoria({ nombre: categoria.nombre });
   };
 
+  // Guardar edición
   const guardarEdicion = () => {
-    fetch(`http://localhost:5000/categorias/${editando.id}`, {
+    if (!nuevaCategoria.nombre.trim()) {
+      alert("El nombre no puede estar vacío");
+      return;
+    }
+
+    fetch(`${API_URL}/${editando.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(nuevaCategoria),
     })
-      .then((res) => res.json())
-      .then((data) => {
-        setCategorias(categorias.map((c) => (c.id === data.id ? data : c)));
+      .then(() => {
+        setCategorias(
+          categorias.map((c) =>
+            c.id === editando.id ? { ...c, nombre: nuevaCategoria.nombre } : c
+          )
+        );
         setEditando(null);
-        setNuevaCategoria({ nombre: "", descripcion: "" });
-      });
+        setNuevaCategoria({ nombre: "" });
+      })
+      .catch((err) => console.error("Error al guardar edición:", err));
   };
 
   return (
@@ -89,13 +107,6 @@ export default function Categorias() {
               onChange={handleChange}
               className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-purple-400 outline-none"
             />
-            <textarea
-              name="descripcion"
-              placeholder="Descripción"
-              value={nuevaCategoria.descripcion}
-              onChange={handleChange}
-              className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-purple-400 outline-none md:col-span-2"
-            />
           </div>
 
           <div className="mt-4">
@@ -117,24 +128,19 @@ export default function Categorias() {
           </div>
         </div>
 
-        {/* Tabla de categorías */}
+        {/* Tabla */}
         <div className="overflow-x-auto bg-white shadow-lg rounded-xl border border-gray-200">
           <table className="w-full text-left border-collapse">
             <thead className="bg-purple-600 text-white">
               <tr>
                 <th className="p-3">Nombre</th>
-                <th className="p-3">Descripción</th>
                 <th className="p-3 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {categorias.map((categoria) => (
-                <tr
-                  key={categoria.id}
-                  className="border-b hover:bg-gray-50 transition"
-                >
+                <tr key={categoria.id} className="border-b hover:bg-gray-50 transition">
                   <td className="p-3 font-semibold">{categoria.nombre}</td>
-                  <td className="p-3 text-gray-600">{categoria.descripcion}</td>
                   <td className="p-3 text-center">
                     <button
                       onClick={() => editarCategoria(categoria)}
@@ -153,10 +159,7 @@ export default function Categorias() {
               ))}
               {categorias.length === 0 && (
                 <tr>
-                  <td
-                    colSpan="3"
-                    className="p-4 text-center text-gray-500 italic"
-                  >
+                  <td colSpan="2" className="p-4 text-center text-gray-500 italic">
                     No hay categorías registradas 📂
                   </td>
                 </tr>

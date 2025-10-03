@@ -3,19 +3,36 @@ import Barra from "../shared/barra";
 
 export default function Ventas() {
   const [ventas, setVentas] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [productos, setProductos] = useState([]);
   const [nuevaVenta, setNuevaVenta] = useState({
-    cliente: "",
-    producto: "",
+    cliente_id: "",
+    producto_id: "",
     cantidad: "",
     total: "",
     fecha: "",
   });
+  const [editando, setEditando] = useState(null);
 
-  // Cargar ventas desde backend
-  useEffect(() => {
-    fetch("http://localhost/backend/ventas/index.php")
+  const API_URL = "http://localhost:4000/ventas";
+
+  // Cargar datos iniciales
+  const cargarDatos = () => {
+    fetch("http://localhost:4000/ventas")
       .then((res) => res.json())
       .then((data) => setVentas(data));
+
+    fetch("http://localhost:4000/clientes")
+      .then((res) => res.json())
+      .then((data) => setClientes(data));
+
+    fetch("http://localhost:4000/productos")
+      .then((res) => res.json())
+      .then((data) => setProductos(data));
+  };
+
+  useEffect(() => {
+    cargarDatos();
   }, []);
 
   const handleChange = (e) => {
@@ -24,38 +41,67 @@ export default function Ventas() {
 
   const agregarVenta = () => {
     if (
-      nuevaVenta.cliente &&
-      nuevaVenta.producto &&
-      nuevaVenta.cantidad &&
-      nuevaVenta.total &&
-      nuevaVenta.fecha
+      !nuevaVenta.cliente_id ||
+      !nuevaVenta.producto_id ||
+      !nuevaVenta.cantidad ||
+      !nuevaVenta.total ||
+      !nuevaVenta.fecha
     ) {
-      fetch("http://localhost/backend/ventas/index.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(nuevaVenta),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          setVentas([...ventas, data]); // añadir venta nueva
-          setNuevaVenta({
-            cliente: "",
-            producto: "",
-            cantidad: "",
-            total: "",
-            fecha: "",
-          });
-        });
+      alert("Por favor completa todos los campos");
+      return;
     }
+
+    fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(nuevaVenta),
+    })
+      .then((res) => res.json())
+      .then(() => {
+        cargarDatos(); // refrescar lista
+        setNuevaVenta({
+          cliente_id: "",
+          producto_id: "",
+          cantidad: "",
+          total: "",
+          fecha: "",
+        });
+      });
+  };
+
+  const editarVenta = (venta) => {
+    setEditando(venta);
+    setNuevaVenta({
+      cliente_id: venta.cliente_id,
+      producto_id: venta.producto_id,
+      cantidad: venta.cantidad,
+      total: venta.total,
+      fecha: venta.fecha,
+    });
+  };
+
+  const guardarEdicion = () => {
+    fetch(`${API_URL}/${editando.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(nuevaVenta),
+    })
+      .then(() => {
+        cargarDatos(); // refrescar lista
+        setEditando(null);
+        setNuevaVenta({
+          cliente_id: "",
+          producto_id: "",
+          cantidad: "",
+          total: "",
+          fecha: "",
+        });
+      });
   };
 
   const eliminarVenta = (id) => {
-    fetch("http://localhost/backend/ventas/index.php", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: `id=${id}`,
-    }).then(() => {
-      setVentas(ventas.filter((v) => v.id !== id));
+    fetch(`${API_URL}/${id}`, { method: "DELETE" }).then(() => {
+      cargarDatos(); // refrescar lista
     });
   };
 
@@ -70,25 +116,39 @@ export default function Ventas() {
         {/* Formulario */}
         <div className="bg-white shadow-lg rounded-xl p-6 mb-8 border border-gray-200">
           <h2 className="text-2xl font-semibold mb-4 text-purple-700">
-            ➕ Registrar Nueva Venta
+            {editando ? "✏️ Editar Venta" : "➕ Registrar Nueva Venta"}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input
-              type="text"
-              name="cliente"
-              placeholder="Nombre del Cliente"
-              value={nuevaVenta.cliente}
+            {/* Select Cliente */}
+            <select
+              name="cliente_id"
+              value={nuevaVenta.cliente_id}
               onChange={handleChange}
               className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-purple-400 outline-none"
-            />
-            <input
-              type="text"
-              name="producto"
-              placeholder="Producto"
-              value={nuevaVenta.producto}
+            >
+              <option value="">Seleccione un cliente</option>
+              {clientes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
+              ))}
+            </select>
+
+            {/* Select Producto */}
+            <select
+              name="producto_id"
+              value={nuevaVenta.producto_id}
               onChange={handleChange}
               className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-purple-400 outline-none"
-            />
+            >
+              <option value="">Seleccione un producto</option>
+              {productos.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre}
+                </option>
+              ))}
+            </select>
+
             <input
               type="number"
               name="cantidad"
@@ -113,12 +173,24 @@ export default function Ventas() {
               className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-purple-400 outline-none md:col-span-2"
             />
           </div>
-          <button
-            onClick={agregarVenta}
-            className="mt-4 bg-purple-600 hover:bg-purple-700 transition text-white px-6 py-2 rounded-lg shadow-md"
-          >
-            ➕ Agregar Venta
-          </button>
+
+          <div className="mt-4">
+            {editando ? (
+              <button
+                onClick={guardarEdicion}
+                className="bg-green-600 hover:bg-green-700 transition text-white px-6 py-2 rounded-lg shadow-md"
+              >
+                💾 Guardar Cambios
+              </button>
+            ) : (
+              <button
+                onClick={agregarVenta}
+                className="bg-purple-600 hover:bg-purple-700 transition text-white px-6 py-2 rounded-lg shadow-md"
+              >
+                ➕ Agregar Venta
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Tabla */}
@@ -139,10 +211,7 @@ export default function Ventas() {
             </thead>
             <tbody>
               {ventas.map((venta) => (
-                <tr
-                  key={venta.id}
-                  className="border-b hover:bg-gray-50 transition"
-                >
+                <tr key={venta.id} className="border-b hover:bg-gray-50 transition">
                   <td className="p-3 font-semibold">{venta.cliente}</td>
                   <td className="p-3">{venta.producto}</td>
                   <td className="p-3">{venta.cantidad}</td>
@@ -151,6 +220,12 @@ export default function Ventas() {
                   </td>
                   <td className="p-3">{venta.fecha}</td>
                   <td className="p-3 text-center">
+                    <button
+                      onClick={() => editarVenta(venta)}
+                      className="bg-yellow-500 hover:bg-yellow-600 transition text-white px-3 py-1 rounded-md mr-2"
+                    >
+                      ✏️ Editar
+                    </button>
                     <button
                       onClick={() => eliminarVenta(venta.id)}
                       className="bg-red-600 hover:bg-red-700 transition text-white px-3 py-1 rounded-md"
@@ -162,10 +237,7 @@ export default function Ventas() {
               ))}
               {ventas.length === 0 && (
                 <tr>
-                  <td
-                    colSpan="6"
-                    className="p-4 text-center text-gray-500 italic"
-                  >
+                  <td colSpan="6" className="p-4 text-center text-gray-500 italic">
                     No hay ventas registradas 🛒
                   </td>
                 </tr>

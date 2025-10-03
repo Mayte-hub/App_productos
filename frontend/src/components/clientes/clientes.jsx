@@ -5,16 +5,19 @@ export default function Clientes() {
   const [clientes, setClientes] = useState([]);
   const [nuevoCliente, setNuevoCliente] = useState({
     nombre: "",
-    correo: "",
+    email: "",
     telefono: "",
-    direccion: "",
   });
+  const [editando, setEditando] = useState(null); // guardar ID del cliente en edición
+
+  const API_URL = "http://localhost:4000/clientes";
 
   // Cargar clientes desde backend
   useEffect(() => {
-    fetch("http://localhost/backend/clientes/index.php")
+    fetch(API_URL)
       .then((res) => res.json())
-      .then((data) => setClientes(data));
+      .then((data) => setClientes(data))
+      .catch((err) => console.error("Error al cargar clientes:", err));
   }, []);
 
   const handleChange = (e) => {
@@ -22,38 +25,55 @@ export default function Clientes() {
   };
 
   const agregarCliente = () => {
-    if (
-      nuevoCliente.nombre &&
-      nuevoCliente.correo &&
-      nuevoCliente.telefono &&
-      nuevoCliente.direccion
-    ) {
-      fetch("http://localhost/backend/clientes/index.php", {
+    if (nuevoCliente.nombre && nuevoCliente.email && nuevoCliente.telefono) {
+      fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(nuevoCliente),
       })
         .then((res) => res.json())
         .then((data) => {
-          setClientes([...clientes, data]); // añadir cliente nuevo
-          setNuevoCliente({
-            nombre: "",
-            correo: "",
-            telefono: "",
-            direccion: "",
-          });
-        });
+          setClientes([...clientes, data]);
+          setNuevoCliente({ nombre: "", email: "", telefono: "" });
+        })
+        .catch((err) => console.error("Error al agregar cliente:", err));
     }
   };
 
   const eliminarCliente = (id) => {
-    fetch("http://localhost/backend/clientes/index.php", {
+    fetch(`${API_URL}/${id}`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: `id=${id}`,
-    }).then(() => {
-      setClientes(clientes.filter((c) => c.id !== id));
+    })
+      .then(() => {
+        setClientes(clientes.filter((c) => c.id !== id));
+      })
+      .catch((err) => console.error("Error al eliminar cliente:", err));
+  };
+
+  const iniciarEdicion = (cliente) => {
+    setEditando(cliente.id);
+    setNuevoCliente({
+      nombre: cliente.nombre,
+      email: cliente.email,
+      telefono: cliente.telefono,
     });
+  };
+
+  const guardarEdicion = () => {
+    fetch(`${API_URL}/${editando}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(nuevoCliente),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setClientes(
+          clientes.map((c) => (c.id === editando ? { ...c, ...data } : c))
+        );
+        setNuevoCliente({ nombre: "", email: "", telefono: "" });
+        setEditando(null);
+      })
+      .catch((err) => console.error("Error al editar cliente:", err));
   };
 
   return (
@@ -67,7 +87,7 @@ export default function Clientes() {
         {/* Formulario */}
         <div className="bg-white shadow-lg rounded-xl p-6 mb-8 border border-gray-200">
           <h2 className="text-2xl font-semibold mb-4 text-purple-700">
-            ➕ Registrar Cliente
+            {editando ? "✏️ Editar Cliente" : "➕ Registrar Cliente"}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input
@@ -80,9 +100,9 @@ export default function Clientes() {
             />
             <input
               type="email"
-              name="correo"
+              name="email"
               placeholder="Correo Electrónico"
-              value={nuevoCliente.correo}
+              value={nuevoCliente.email}
               onChange={handleChange}
               className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-purple-400 outline-none"
             />
@@ -94,21 +114,33 @@ export default function Clientes() {
               onChange={handleChange}
               className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-purple-400 outline-none"
             />
-            <input
-              type="text"
-              name="direccion"
-              placeholder="Dirección"
-              value={nuevoCliente.direccion}
-              onChange={handleChange}
-              className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-purple-400 outline-none"
-            />
           </div>
-          <button
-            onClick={agregarCliente}
-            className="mt-4 bg-purple-600 hover:bg-purple-700 transition text-white px-6 py-2 rounded-lg shadow-md"
-          >
-            ➕ Agregar Cliente
-          </button>
+          {editando ? (
+            <div className="mt-4 flex gap-3">
+              <button
+                onClick={guardarEdicion}
+                className="bg-green-600 hover:bg-green-700 transition text-white px-6 py-2 rounded-lg shadow-md"
+              >
+                💾 Guardar Cambios
+              </button>
+              <button
+                onClick={() => {
+                  setEditando(null);
+                  setNuevoCliente({ nombre: "", email: "", telefono: "" });
+                }}
+                className="bg-gray-500 hover:bg-gray-600 transition text-white px-6 py-2 rounded-lg shadow-md"
+              >
+                ❌ Cancelar
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={agregarCliente}
+              className="mt-4 bg-purple-600 hover:bg-purple-700 transition text-white px-6 py-2 rounded-lg shadow-md"
+            >
+              ➕ Agregar Cliente
+            </button>
+          )}
         </div>
 
         {/* Tabla */}
@@ -122,7 +154,6 @@ export default function Clientes() {
                 <th className="p-3">Nombre</th>
                 <th className="p-3">Correo</th>
                 <th className="p-3">Teléfono</th>
-                <th className="p-3">Dirección</th>
                 <th className="p-3 text-center">Acciones</th>
               </tr>
             </thead>
@@ -133,10 +164,15 @@ export default function Clientes() {
                   className="border-b hover:bg-gray-50 transition"
                 >
                   <td className="p-3 font-semibold">{cliente.nombre}</td>
-                  <td className="p-3">{cliente.correo}</td>
+                  <td className="p-3">{cliente.email}</td>
                   <td className="p-3">{cliente.telefono}</td>
-                  <td className="p-3">{cliente.direccion}</td>
-                  <td className="p-3 text-center">
+                  <td className="p-3 text-center flex justify-center gap-2">
+                    <button
+                      onClick={() => iniciarEdicion(cliente)}
+                      className="bg-blue-600 hover:bg-blue-700 transition text-white px-3 py-1 rounded-md"
+                    >
+                      ✏️ Editar
+                    </button>
                     <button
                       onClick={() => eliminarCliente(cliente.id)}
                       className="bg-red-600 hover:bg-red-700 transition text-white px-3 py-1 rounded-md"
@@ -149,7 +185,7 @@ export default function Clientes() {
               {clientes.length === 0 && (
                 <tr>
                   <td
-                    colSpan="5"
+                    colSpan="4"
                     className="p-4 text-center text-gray-500 italic"
                   >
                     No hay clientes registrados 👥

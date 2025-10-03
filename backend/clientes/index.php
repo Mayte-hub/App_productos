@@ -19,20 +19,18 @@ switch ($method) {
 
     case "POST":
         $nombre = $conn->real_escape_string($input["nombre"]);
-        $correo = $conn->real_escape_string($input["correo"]);
+        $email = $conn->real_escape_string($input["email"]);
         $telefono = $conn->real_escape_string($input["telefono"]);
-        $direccion = $conn->real_escape_string($input["direccion"]);
 
-        $sql = "INSERT INTO clientes (nombre, correo, telefono, direccion) 
-                VALUES ('$nombre', '$correo', '$telefono', '$direccion')";
+        $sql = "INSERT INTO clientes (nombre, email, telefono) 
+                VALUES ('$nombre', '$email', '$telefono')";
 
         if ($conn->query($sql)) {
             echo json_encode([
                 "id" => $conn->insert_id,
                 "nombre" => $nombre,
-                "correo" => $correo,
-                "telefono" => $telefono,
-                "direccion" => $direccion
+                "email" => $email,
+                "telefono" => $telefono
             ]);
         } else {
             echo json_encode(["error" => $conn->error]);

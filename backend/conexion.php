@@ -1,23 +1,15 @@
 <?php
-// Leer variables de .env
-$env = parse_ini_file(__DIR__ . "/.env");
+$host = "localhost";
+$user = "root";
+$pass = ""; // contraseña vacía
+$db   = "inventario";
+$port = 3315; // puerto correcto de tu MySQL en XAMPP
 
-$servername = $env['DB_HOST'];
-$username = $env['DB_USER'];
-$password = $env['DB_PASS'];
-$dbname = $env['DB_NAME'];
+$conn = new mysqli($host, $user, $pass, $db, $port);
 
-// Crear conexión
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Verificar conexión
 if ($conn->connect_error) {
-    die(json_encode(["error" => "Conexión fallida: " . $conn->connect_error]));
+    die("❌ Conexión fallida: " . $conn->connect_error);
 }
 
-// Configurar para trabajar con JSON
 header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Origin: *"); // Permitir conexiones desde cualquier origen
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
 ?>
