@@ -1,53 +1,75 @@
 <?php
 include "../conexion.php";
-
 header("Content-Type: application/json");
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-if ($method == "GET") {
-    $result = $conn->query("SELECT * FROM ventas");
-    $ventas = [];
-    while ($row = $result->fetch_assoc()) {
-        $ventas[] = $row;
-    }
-    echo json_encode($ventas);
-}
+switch ($method) {
+    case "GET":
+        // Obtener todas las ventas
+        $result = $conn->query("SELECT * FROM ventas");
+        $ventas = [];
+        while ($row = $result->fetch_assoc()) {
+            $ventas[] = $row;
+        }
+        echo json_encode($ventas);
+        break;
 
-if ($method == "POST") {
-    $data = json_decode(file_get_contents("php://input"), true);
+    case "POST":
+        $data = json_decode(file_get_contents("php://input"), true);
 
-    $cliente   = $conn->real_escape_string($data["cliente"]);
-    $producto  = $conn->real_escape_string($data["producto"]);
-    $cantidad  = $conn->real_escape_string($data["cantidad"]);
-    $total     = $conn->real_escape_string($data["total"]);
-    $fecha     = $conn->real_escape_string($data["fecha"]);
+        // Obtener los nombres desde los IDs
+        $cliente_id = $conn->real_escape_string($data["cliente_id"]);
+        $producto_id = $conn->real_escape_string($data["producto_id"]);
+        $cantidad = $conn->real_escape_string($data["cantidad"]);
+        $total = $conn->real_escape_string($data["total"]);
+        $fecha = $conn->real_escape_string($data["fecha"]);
 
-    $sql = "INSERT INTO ventas (cliente, producto, cantidad, total, fecha) VALUES ('$cliente', '$producto', '$cantidad', '$total', '$fecha')";
-    if ($conn->query($sql) === TRUE) {
-        $id = $conn->insert_id;
-        echo json_encode([
-            "id" => $id,
-            "cliente" => $cliente,
-            "producto" => $producto,
-            "cantidad" => $cantidad,
-            "total" => $total,
-            "fecha" => $fecha
-        ]);
-    } else {
-        echo json_encode(["error" => $conn->error]);
-    }
-}
+        // Buscar nombres reales
+        $cliente = "";
+        $producto = "";
 
-if ($method == "DELETE") {
-    parse_str(file_get_contents("php://input"), $data);
-    $id = $conn->real_escape_string($data["id"]);
+        $resCliente = $conn->query("SELECT nombre FROM clientes WHERE id = '$cliente_id'");
+        if ($resCliente && $resCliente->num_rows > 0) {
+            $cliente = $resCliente->fetch_assoc()["nombre"];
+        }
 
-    $sql = "DELETE FROM ventas WHERE id=$id";
-    if ($conn->query($sql) === TRUE) {
-        echo json_encode(["success" => true]);
-    } else {
-        echo json_encode(["error" => $conn->error]);
-    }
+        $resProducto = $conn->query("SELECT nombre FROM productos WHERE id = '$producto_id'");
+        if ($resProducto && $resProducto->num_rows > 0) {
+            $producto = $resProducto->fetch_assoc()["nombre"];
+        }
+
+        $sql = "INSERT INTO ventas (cliente, producto, cantidad, total, fecha)
+                VALUES ('$cliente', '$producto', '$cantidad', '$total', '$fecha')";
+
+        if ($conn->query($sql) === TRUE) {
+            echo json_encode([
+                "id" => $conn->insert_id,
+                "cliente" => $cliente,
+                "producto" => $producto,
+                "cantidad" => $cantidad,
+                "total" => $total,
+                "fecha" => $fecha
+            ]);
+        } else {
+            echo json_encode(["error" => $conn->error]);
+        }
+        break;
+
+    case "DELETE":
+        parse_str(file_get_contents("php://input"), $data);
+        $id = $conn->real_escape_string($data["id"]);
+
+        $sql = "DELETE FROM ventas WHERE id = $id";
+        if ($conn->query($sql) === TRUE) {
+            echo json_encode(["success" => true]);
+        } else {
+            echo json_encode(["error" => $conn->error]);
+        }
+        break;
+
+    default:
+        echo json_encode(["error" => "Método no permitido"]);
+        break;
 }
 ?>

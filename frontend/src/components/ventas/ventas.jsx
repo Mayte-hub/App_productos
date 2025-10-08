@@ -6,8 +6,8 @@ export default function Ventas() {
   const [clientes, setClientes] = useState([]);
   const [productos, setProductos] = useState([]);
   const [nuevaVenta, setNuevaVenta] = useState({
-    cliente_id: "",
-    producto_id: "",
+    cliente: "",
+    producto: "",
     cantidad: "",
     total: "",
     fecha: "",
@@ -41,8 +41,8 @@ export default function Ventas() {
 
   const agregarVenta = () => {
     if (
-      !nuevaVenta.cliente_id ||
-      !nuevaVenta.producto_id ||
+      !nuevaVenta.cliente ||
+      !nuevaVenta.producto ||
       !nuevaVenta.cantidad ||
       !nuevaVenta.total ||
       !nuevaVenta.fecha
@@ -60,8 +60,8 @@ export default function Ventas() {
       .then(() => {
         cargarDatos(); // refrescar lista
         setNuevaVenta({
-          cliente_id: "",
-          producto_id: "",
+          cliente: "",
+          producto: "",
           cantidad: "",
           total: "",
           fecha: "",
@@ -72,8 +72,8 @@ export default function Ventas() {
   const editarVenta = (venta) => {
     setEditando(venta);
     setNuevaVenta({
-      cliente_id: venta.cliente_id,
-      producto_id: venta.producto_id,
+      cliente: venta.cliente,
+      producto: venta.producto,
       cantidad: venta.cantidad,
       total: venta.total,
       fecha: venta.fecha,
@@ -90,8 +90,8 @@ export default function Ventas() {
         cargarDatos(); // refrescar lista
         setEditando(null);
         setNuevaVenta({
-          cliente_id: "",
-          producto_id: "",
+          cliente: "",
+          producto: "",
           cantidad: "",
           total: "",
           fecha: "",
@@ -121,14 +121,14 @@ export default function Ventas() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Select Cliente */}
             <select
-              name="cliente_id"
-              value={nuevaVenta.cliente_id}
+              name="cliente"
+              value={nuevaVenta.cliente}
               onChange={handleChange}
               className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-purple-400 outline-none"
             >
               <option value="">Seleccione un cliente</option>
               {clientes.map((c) => (
-                <option key={c.id} value={c.id}>
+                <option key={c.id} value={c.nombre}>
                   {c.nombre}
                 </option>
               ))}
@@ -136,14 +136,14 @@ export default function Ventas() {
 
             {/* Select Producto */}
             <select
-              name="producto_id"
-              value={nuevaVenta.producto_id}
+              name="producto"
+              value={nuevaVenta.producto}
               onChange={handleChange}
               className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-purple-400 outline-none"
             >
               <option value="">Seleccione un producto</option>
               {productos.map((p) => (
-                <option key={p.id} value={p.id}>
+                <option key={p.id} value={p.nombre}>
                   {p.nombre}
                 </option>
               ))}
@@ -211,7 +211,10 @@ export default function Ventas() {
             </thead>
             <tbody>
               {ventas.map((venta) => (
-                <tr key={venta.id} className="border-b hover:bg-gray-50 transition">
+                <tr
+                  key={venta.id}
+                  className="border-b hover:bg-gray-50 transition"
+                >
                   <td className="p-3 font-semibold">{venta.cliente}</td>
                   <td className="p-3">{venta.producto}</td>
                   <td className="p-3">{venta.cantidad}</td>
@@ -237,7 +240,10 @@ export default function Ventas() {
               ))}
               {ventas.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="p-4 text-center text-gray-500 italic">
+                  <td
+                    colSpan="6"
+                    className="p-4 text-center text-gray-500 italic"
+                  >
                     No hay ventas registradas 🛒
                   </td>
                 </tr>

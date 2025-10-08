@@ -2,7 +2,7 @@
 $host = "localhost";
 $user = "root";
 $pass = ""; // contraseña vacía
-$db   = "inventario";
+$db   = "inventario_bebe";
 $port = 3315; // puerto correcto de tu MySQL en XAMPP
 
 $conn = new mysqli($host, $user, $pass, $db, $port);

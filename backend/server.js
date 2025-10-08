@@ -11,7 +11,7 @@ const db = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: "", // agrega tu contraseña si tienes
-  database: "inventario",
+  database: "inventario_bebe",
   port: 3315
 });
 
@@ -24,6 +24,7 @@ db.connect((err) => {
 });
 
 // ================== RUTAS PRODUCTOS ==================
+// ================== RUTAS PRODUCTOS ==================
 app.get("/productos", (req, res) => {
   db.query("SELECT * FROM productos", (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -32,28 +33,28 @@ app.get("/productos", (req, res) => {
 });
 
 app.post("/productos", (req, res) => {
-  const { nombre, descripcion, precio, imagen, categoria_id } = req.body;
+  const { nombre, descripcion, precio, imagen, categoria } = req.body;
   db.query(
-    "INSERT INTO productos (nombre, descripcion, precio, imagen, categoria_id) VALUES (?, ?, ?, ?, ?)",
-    [nombre, descripcion, precio, imagen, categoria_id],
+    "INSERT INTO productos (nombre, descripcion, precio, imagen, categoria) VALUES (?, ?, ?, ?, ?)",
+    [nombre, descripcion, precio, imagen, categoria],
     (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ id: result.insertId, nombre, descripcion, precio, imagen, categoria_id });
+      res.json({ id: result.insertId, nombre, descripcion, precio, imagen, categoria });
     }
   );
 });
 
 app.put("/productos/:id", (req, res) => {
-  const { nombre, descripcion, precio, imagen, categoria_id } = req.body;
+  const { nombre, descripcion, precio, imagen, categoria } = req.body;
   db.query(
-    "UPDATE productos SET nombre=?, descripcion=?, precio=?, imagen=?, categoria_id=? WHERE id=?",
-    [nombre, descripcion, precio, imagen, categoria_id, req.params.id],
+    "UPDATE productos SET nombre=?, descripcion=?, precio=?, imagen=?, categoria=? WHERE id=?",
+    [nombre, descripcion, precio, imagen, categoria, req.params.id],
     (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: "Producto no encontrado" });
       }
-      res.json({ id: req.params.id, nombre, descripcion, precio, imagen, categoria_id });
+      res.json({ id: req.params.id, nombre, descripcion, precio, imagen, categoria });
     }
   );
 });
@@ -67,6 +68,7 @@ app.delete("/productos/:id", (req, res) => {
     res.json({ success: true });
   });
 });
+
 
 // ================== RUTAS CATEGORÍAS ==================
 app.get("/categorias", (req, res) => {
@@ -158,31 +160,25 @@ app.delete("/clientes/:id", (req, res) => {
   });
 });
 
-// ================== RUTAS VENTAS ==================
+// ================== RUTAS VENTAS (CORREGIDO) ==================
 app.get("/ventas", (req, res) => {
-  db.query(
-    `SELECT ventas.id, clientes.nombre AS cliente, productos.nombre AS producto, ventas.cantidad, ventas.total, ventas.fecha
-     FROM ventas
-     JOIN clientes ON ventas.cliente_id = clientes.id
-     JOIN productos ON ventas.producto_id = productos.id`,
-    (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json(results);
-    }
-  );
+  db.query("SELECT * FROM ventas", (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
 });
 
 app.post("/ventas", (req, res) => {
-  const { cliente_id, producto_id, cantidad, total, fecha } = req.body;
+  const { cliente, producto, cantidad, total, fecha } = req.body;
   db.query(
-    "INSERT INTO ventas (cliente_id, producto_id, cantidad, total, fecha) VALUES (?, ?, ?, ?, ?)",
-    [cliente_id, producto_id, cantidad, total, fecha],
+    "INSERT INTO ventas (cliente, producto, cantidad, total, fecha) VALUES (?, ?, ?, ?, ?)",
+    [cliente, producto, cantidad, total, fecha],
     (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json({
         id: result.insertId,
-        cliente_id,
-        producto_id,
+        cliente,
+        producto,
         cantidad,
         total,
         fecha,
@@ -192,10 +188,10 @@ app.post("/ventas", (req, res) => {
 });
 
 app.put("/ventas/:id", (req, res) => {
-  const { cliente_id, producto_id, cantidad, total, fecha } = req.body;
+  const { cliente, producto, cantidad, total, fecha } = req.body;
   db.query(
-    "UPDATE ventas SET cliente_id=?, producto_id=?, cantidad=?, total=?, fecha=? WHERE id=?",
-    [cliente_id, producto_id, cantidad, total, fecha, req.params.id],
+    "UPDATE ventas SET cliente=?, producto=?, cantidad=?, total=?, fecha=? WHERE id=?",
+    [cliente, producto, cantidad, total, fecha, req.params.id],
     (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
       if (result.affectedRows === 0) {
@@ -203,8 +199,8 @@ app.put("/ventas/:id", (req, res) => {
       }
       res.json({
         id: req.params.id,
-        cliente_id,
-        producto_id,
+        cliente,
+        producto,
         cantidad,
         total,
         fecha,

@@ -9,7 +9,7 @@ header("Content-Type: application/json");
 $host = "localhost";
 $user = "root";
 $pass = "";
-$db   = "inventario"; // cambia este nombre si tu base es otra
+$db   = "inventario_bebe"; // cambia este nombre si tu base es otra
 
 $conn = new mysqli($host, $user, $pass, $db);
 
